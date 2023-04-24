@@ -23,7 +23,7 @@ mongoose
 
 app.use(
   cors({
-    origin: ["https://front-bay-pi.vercel.app"],
+    origin: ["https://front-bay-pi.vercel.app/"],
     method: ["GET", "POST"],
     credentials: true,
   })
@@ -35,4 +35,4 @@ app.get("/", (req, res) => {
 
 app.use(cookieParser());
 app.use(express.json());
-app.use("https://front-bay-pi.vercel.app/", authRoutes);
+app.use("/", authRoutes);
