@@ -35,4 +35,4 @@ app.get("/", (req, res) => {
 
 app.use(cookieParser());
 app.use(express.json());
-app.use("/", authRoutes);
+app.use("https://front-bay-pi.vercel.app/", authRoutes);
