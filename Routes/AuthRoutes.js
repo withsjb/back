@@ -13,7 +13,7 @@ const { problem } = require("../Controllers/AuthControllers");
 const router = require("express").Router();
 
 router.post("/", checkUser);
-router.post("/register", register);
+router.post("https://front-bay-pi.vercel.app/register", register);
 router.post("/login", login);
 router.post("/problem", addproblem);
 router.get("/problem", problem);
