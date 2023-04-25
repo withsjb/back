@@ -21,13 +21,7 @@ mongoose
     console.log(err.message);
   });
 
-app.use(
-  cors({
-    origin: ["https://front-bay-pi.vercel.app/"],
-    method: ["GET", "POST"],
-    credentials: true,
-  })
-);
+app.use(cors());
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
