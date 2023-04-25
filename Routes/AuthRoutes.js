@@ -12,7 +12,7 @@ const { problem } = require("../Controllers/AuthControllers");
 
 const router = require("express").Router();
 
-router.post("/", checkUser);
+router.post("/api", checkUser);
 router.post("/api/register", register);
 router.post("/api/login", login);
 router.post("/api/problem", addproblem);
