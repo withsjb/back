@@ -24,7 +24,7 @@ mongoose
 app.use(
   cors({
     origin: "https://front-bay-pi.vercel.app/",
-    method: ["GET", "POST"],
+    method: ["get", "post"],
     credentials: true,
   })
 );
