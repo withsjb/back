@@ -12,13 +12,13 @@ const { problem } = require("../Controllers/AuthControllers");
 
 const router = require("express").Router();
 
-router.post("/api", checkUser);
-router.post("/api/register", register);
-router.post("/api/login", login);
-router.post("/api/problem", addproblem);
-router.get("/api/problem", problem);
-router.get("/api/problem:id", returnproblem);
-router.put("/api/problem:id", correctionproblem);
-router.delete("/api/problem:id", deleteproblem);
+router.post("/", checkUser);
+router.post("/register", register);
+router.post("/login", login);
+router.post("/problem", addproblem);
+router.get("/problem", problem);
+router.get("/problem:id", returnproblem);
+router.put("/problem:id", correctionproblem);
+router.delete("/problem:id", deleteproblem);
 
 module.exports = router;
