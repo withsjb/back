@@ -11,6 +11,8 @@ app.listen(4000, () => {
   console.log("Server Started on port 4000");
 });
 
+config();
+
 mongoose
   .connect(
     "mongodb+srv://withsjb:as7170882@cluster0.ub4j94d.mongodb.net/?retryWrites=true&w=majority",
@@ -22,6 +24,8 @@ mongoose
   .catch((err) => {
     console.log(err.message);
   });
+
+app.use(morgan("tiny"));
 
 app.use(
   cors({
