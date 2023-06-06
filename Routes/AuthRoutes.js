@@ -1,13 +1,22 @@
 const {
   register,
   login,
-  returnproblem,
-  addproblem,
-  deleteproblem,
-  correctionproblem,
+  testQuestions,
+  getQuestion,
+  insertQuestions,
+  dropQuestions,
+  getResult,
+  storeResult,
+  dropResult,
+  randomQuestion,
+  getLatestQuestion,
+  updatQuestion,
+  getimg,
+  saveimg,
 } = require("../Controllers/AuthControllers");
 const { checkUser } = require("../Middlewares/AuthMiddlewares");
-const { problem } = require("../Controllers/AuthControllers");
+const uploadMiddleware = require("../middlewares/MulterMiddleware");
+
 //자동생성 되는거보니 기능인듯
 
 const router = require("express").Router();
@@ -15,10 +24,28 @@ const router = require("express").Router();
 router.post("/", checkUser);
 router.post("/register", register);
 router.post("/login", login);
-router.post("/problem", addproblem);
-router.get("/problem", problem);
-router.get("/problem:id", returnproblem);
-router.put("/problem:id", correctionproblem);
-router.delete("/problem:id", deleteproblem);
+
+router
+  .route("/quiz")
+  .get(getLatestQuestion)
+  .post(uploadMiddleware.single("photo"), testQuestions);
+
+router
+  .route("/questions/:quizId/:questionId")
+  .delete(dropQuestions)
+  .put(updatQuestion);
+
+router
+  .route("/questions")
+  .get(getQuestion)
+  .post(insertQuestions)
+  .delete(dropQuestions);
+
+router.route("/result").get(getResult).post(storeResult).delete(dropResult);
+
+router
+  .route("/upload")
+  .get(getimg)
+  .post(uploadMiddleware.single("photo"), saveimg);
 
 module.exports = router;

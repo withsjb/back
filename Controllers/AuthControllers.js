@@ -1,6 +1,10 @@
 const UserModel = require("../Models/UserModel");
-const Problem = require("../Models/Problem");
 const jwt = require("jsonwebtoken");
+const Questions = require("../Models/questionModel");
+const Results = require("../Models/resultModel");
+const { questions: questions, answers, photo } = require("../database/data.js");
+const _ = require("lodash");
+const UploadModel = require("../Models/UploadModel");
 
 const maxAge = 3 * 24 * 60 * 60;
 
@@ -64,65 +68,192 @@ module.exports.login = async (req, res) => {
   }
 };
 
-module.exports.problem = async (req, res) => {
+/** get all questions */
+module.exports.getQuestion = async (req, res) => {
   try {
-    const problems = await Problem.find();
-    res.json(problems);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
+    const q = await Questions.find();
+    res.json(q);
+  } catch (error) {
+    res.json(error);
   }
 };
 
-module.exports.addproblem = async (req, res) => {
+/**insert all questions */
+module.exports.insertQuestions = async (req, res) => {
   try {
-    const problem = new Problem(req.body);
-    await problem.save();
-    res.json(problem);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
+    await Questions.create({ questions, answers, photo });
+    res.json({ msg: "Data Saved Successfully...!" });
+  } catch (error) {
+    res.json({ error });
   }
 };
-
-module.exports.returnproblem = async (req, res) => {
+//마지막 추가된 데이터 확인
+module.exports.getLatestQuestion = async (req, res) => {
   try {
-    const problem = await Problem.findById(req.params.id);
-    if (!problem) {
-      return res.status(404).json({ msg: "Problem not found" });
+    const questions = await Question.find().sort({ createdAt: -1 });
+    if (!questions) {
+      return res.status(404).json({ error: "No questions found" });
     }
-    res.json(problem);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
+    const lastQuestion = questions[0];
+    const lastQuestionId = lastQuestion ? lastQuestion.questions[0].id : 0;
+    res.status(200).json({ lastQuestionId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server Error" });
   }
 };
 
-module.exports.correctionproblem = async (req, res) => {
+//데이터 추가
+module.exports.testQuestions = async (req, res) => {
   try {
-    const problem = await Problem.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
+    const { questions, answers } = JSON.parse(req.body.questions);
+    const { filename } = req.file;
+
+    const existingQuestion = await Questions.findById(
+      "647c283a10a55bafa6e495df"
+    );
+
+    questions.forEach((questionData) => {
+      existingQuestion.questions.push(questionData);
     });
-    if (!problem) {
-      return res.status(404).json({ msg: "Problem not found" });
-    }
-    res.json(problem);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
+    answers.forEach((answerData) => {
+      existingQuestion.answers.push(answerData);
+    });
+
+    existingQuestion.photo.push(filename);
+
+    const updatedQuestion = await existingQuestion.save();
+
+    res.json({
+      msg: "Question Updated Successfully",
+      question: updatedQuestion,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-module.exports.deleteproblem = async (req, res) => {
+module.exports.dropQuestions = async (req, res) => {
   try {
-    const problem = await Problem.findByIdAndDelete(req.params.id);
-    if (!problem) {
-      return res.status(404).json({ msg: "Problem not found" });
+    const { quizId, questionId } = req.params;
+    // find the question to delete from the quiz
+    const quiz = await Questions.findById(quizId);
+    const questionIndex = quiz.questions.findIndex((q) => q.id === questionId);
+    if (questionIndex === -1) {
+      return res.status(404).json({ message: "Question not found" });
     }
-    res.json({ msg: "Problem deleted" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
+    // remove the question and answer from the quiz
+    quiz.questions.splice(questionIndex, 1);
+    quiz.answers.splice(questionIndex, 1);
+    await quiz.save();
+    res.status(200).json({ message: "Question deleted successfully" });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports.updatQuestion = async (req, res) => {
+  try {
+    const { quizId, questionId } = req.params;
+    const { question, text, options, answer } = req.body;
+
+    // Find the quiz
+    const quiz = await Questions.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    // Find the question to update
+    const questionIndex = quiz.questions.findIndex((q) => q.id === questionId);
+    if (questionIndex === -1) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Update the question and answer
+    const updatedQuestion = {
+      id: questionId,
+      question,
+      text,
+      options,
+    };
+
+    quiz.questions[questionIndex] = updatedQuestion;
+
+    if (Number(answer) === 0) {
+      quiz.answers[questionIndex] = 0; // 정답이 1번일 때는 1로 설정
+    } else {
+      quiz.answers[questionIndex] = parseInt(answer, 10); // 나머지 경우는 answer를 그대로 저장
+    }
+
+    // Save the updated quiz
+    const updatedQuiz = await quiz.save();
+
+    res.status(200).json({
+      message: "Question updated successfully",
+      question: updatedQuiz.questions[questionIndex],
+      answers: updatedQuiz.answers,
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+//**result부분 */
+module.exports.getResult = async (req, res) => {
+  try {
+    const r = await Results.find();
+    res.json(r);
+  } catch (error) {
+    res.json({ error });
+  }
+};
+
+module.exports.storeResult = async (req, res) => {
+  try {
+    const { username, result, attempts, points, achived } = req.body;
+    if (!username || !result) throw new Error("Data Not Provided...!");
+
+    await Results.create({ username, result, attempts, points, achived });
+    res.json({ msg: "Result Saved Successfully...!" });
+  } catch (error) {
+    res.json({ error });
+  }
+};
+
+module.exports.dropResult = async (req, res) => {
+  try {
+    await Results.deleteMany();
+    res.json({ msg: "Result Deleted Successfully...!" });
+  } catch (error) {
+    res.json({ error });
+  }
+};
+
+module.exports.getimg = async (req, res) => {
+  try {
+    const allPhotos = await UploadModel.find().sort({
+      createdAt: "descending",
+    });
+    res.send(allPhotos);
+  } catch (error) {
+    res.json({ error });
+  }
+};
+
+module.exports.saveimg = async (req, res) => {
+  try {
+    const photo = req.file.filename;
+
+    console.log(photo);
+
+    UploadModel.create({ photo }).then((data) => {
+      console.log("Uploaded Successfully...");
+      console.log(data);
+      res.send(data);
+    });
+  } catch (error) {
+    res.json({ error });
   }
 };

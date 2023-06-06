@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const authRoutes = require("./Routes/AuthRoutes");
 const app = express();
 const cookieParser = require("cookie-parser");
+const { config } = require("dotenv");
+const morgan = require("morgan");
 
 app.listen(4000, () => {
   console.log("Server Started on port 4000");
@@ -31,4 +33,5 @@ app.use(
 
 app.use(cookieParser());
 app.use(express.json());
+app.use(express.static("public"));
 app.use("/", authRoutes);
