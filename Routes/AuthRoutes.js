@@ -15,7 +15,7 @@ const {
   saveimg,
 } = require("../Controllers/AuthControllers");
 const { checkUser } = require("../Middlewares/AuthMiddlewares");
-const uploadMiddleware = require("../middlewares/MulterMiddleware");
+const uploadMiddleware = require("../Middlewares/MulterMiddleware");
 
 //자동생성 되는거보니 기능인듯
 
