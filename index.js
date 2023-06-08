@@ -7,8 +7,8 @@ const cookieParser = require("cookie-parser");
 const { config } = require("dotenv");
 const morgan = require("morgan");
 
-app.listen(443, () => {
-  console.log("Server Started on port 443");
+app.listen(4000, () => {
+  console.log("Server Started on port 4000");
 });
 
 config();
