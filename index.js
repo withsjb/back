@@ -7,8 +7,8 @@ const cookieParser = require("cookie-parser");
 const { config } = require("dotenv");
 const morgan = require("morgan");
 
-app.listen(4000, () => {
-  console.log("Server Started on port 4000");
+app.listen(443, () => {
+  console.log("Server Started on port 443");
 });
 
 config();
@@ -30,7 +30,7 @@ app.use(morgan("tiny"));
 app.use(
   cors({
     origin: "https://front-bay-pi.vercel.app",
-    method: ["get", "post"],
+    method: ["GET", "POST"],
     credentials: true,
   })
 );
