@@ -29,7 +29,7 @@ app.use(morgan("tiny"));
 
 app.use(
   cors({
-    origin: "https://front-bay-pi.vercel.app/",
+    origin: "https://front-bay-pi.vercel.app",
     method: ["get", "post"],
     credentials: true,
   })
