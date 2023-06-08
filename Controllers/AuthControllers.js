@@ -107,8 +107,7 @@ module.exports.getLatestQuestion = async (req, res) => {
 //데이터 추가
 module.exports.testQuestions = async (req, res) => {
   try {
-    const { questions, answers } = JSON.parse(req.body.questions);
-    const { filename } = req.file;
+    const { questions, answers, photo } = JSON.parse(req.body.questions);
 
     const existingQuestion = await Questions.findById(
       "647c283a10a55bafa6e495df"
@@ -121,7 +120,7 @@ module.exports.testQuestions = async (req, res) => {
       existingQuestion.answers.push(answerData);
     });
 
-    existingQuestion.photo.push(filename);
+    existingQuestion.photo = existingQuestion.photo.concat(photo);
 
     const updatedQuestion = await existingQuestion.save();
 
