@@ -5,6 +5,7 @@ const Results = require("../Models/resultModel");
 const { questions: questions, answers, photo } = require("../database/data.js");
 const _ = require("lodash");
 const UploadModel = require("../Models/UploadModel");
+const fs = require("fs");
 
 const maxAge = 3 * 24 * 60 * 60;
 
@@ -145,6 +146,7 @@ module.exports.dropQuestions = async (req, res) => {
     // remove the question and answer from the quiz
     quiz.questions.splice(questionIndex, 1);
     quiz.answers.splice(questionIndex, 1);
+    quiz.photo.splice(questionIndex, 1);
     await quiz.save();
     res.status(200).json({ message: "Question deleted successfully" });
   } catch (error) {
@@ -165,25 +167,33 @@ module.exports.updatQuestion = async (req, res) => {
     }
 
     // Find the question to update
-    const questionIndex = quiz.questions.findIndex((q) => q.id === questionId);
-    if (questionIndex === -1) {
+    const questionToUpdate = quiz.questions.find((q) => q.id === questionId);
+    if (!questionToUpdate) {
       return res.status(404).json({ message: "Question not found" });
     }
 
     // Update the question and answer
-    const updatedQuestion = {
-      id: questionId,
-      question,
-      text,
-      options,
-    };
+    questionToUpdate.question = question;
+    questionToUpdate.text = text;
+    questionToUpdate.options = options;
 
-    quiz.questions[questionIndex] = updatedQuestion;
+    const questionIndex = quiz.questions.findIndex((q) => q.id === questionId);
+    quiz.questions[questionIndex] = questionToUpdate;
 
     if (Number(answer) === 0) {
       quiz.answers[questionIndex] = 0; // 정답이 1번일 때는 1로 설정
     } else {
       quiz.answers[questionIndex] = parseInt(answer, 10); // 나머지 경우는 answer를 그대로 저장
+    }
+
+    // Check if a new photo is uploaded
+    if (req.file) {
+      // Delete the existing photo if it exists
+      if (quiz.photo[questionIndex]) {
+        fs.unlinkSync(`./public/uploads/${quiz.photo[questionIndex]}`);
+      }
+
+      quiz.photo[questionIndex] = req.file.filename; // Update the photo filename
     }
 
     // Save the updated quiz

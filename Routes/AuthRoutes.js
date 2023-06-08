@@ -33,7 +33,7 @@ router
 router
   .route("/questions/:quizId/:questionId")
   .delete(dropQuestions)
-  .put(updatQuestion);
+  .put(uploadMiddleware.single("photo"), updatQuestion);
 
 router
   .route("/questions")
