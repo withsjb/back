@@ -35,9 +35,9 @@ const {
   deletetestbedFile,
   downloadfile,
 } = require("../Controllers/AuthControllers");
-const { checkUser } = require("../middlewares/AuthMiddlewares");
-const uploadMiddleware = require("../middlewares/MulterMiddleware");
-const fileMiddleware = require("../middlewares/FileMiddleware");
+const { checkUser } = require("../Middlewares/AuthMiddlewares");
+const uploadMiddleware = require("../Middlewares/MulterMiddleware");
+const fileMiddleware = require("../Middlewares/FileMiddleware");
 
 //자동생성 되는거보니 기능인듯
 
