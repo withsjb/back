@@ -2,14 +2,15 @@ const UserModel = require("../Models/UserModel");
 const jwt = require("jsonwebtoken");
 const Questions = require("../Models/questionModel");
 const Results = require("../Models/resultModel");
-
+const path = require("path");
+const fs = require("fs");
 const Term = require("../Models/TermModel");
 const Wikiapp = require("../Models/wikiappModel");
 const LinuxFile = require("../Models/linuxfileModel");
 const { questions: questions, answers, photo } = require("../database/data.js");
 const _ = require("lodash");
 const UploadModel = require("../Models/UploadModel");
-
+const File = require("../Models/fileuploadModel");
 const maxAge = 3 * 24 * 60 * 60;
 
 const createToken = (id) => {
@@ -395,7 +396,7 @@ module.exports.addContent = async (req, res) => {
       $push: {
         concept: concept !== null ? concept : [], // 빈 문자열인 경우에도 배열로 설정
         content: content !== null ? content : "",
-        photo: photo ? photo.filename : null,
+        photo: photo ? photo.filename : "",
       },
     };
 
@@ -409,6 +410,73 @@ module.exports.addContent = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send("Failed to add content and photo to file");
+  }
+};
+
+module.exports.deleteContent = async (req, res) => {
+  try {
+    const { fileId, index } = req.params;
+    console.log("Received index:", index);
+    const updatedFile = await LinuxFile.findByIdAndUpdate(
+      fileId,
+      {
+        $unset: {
+          [`concept.${index}`]: 1,
+          [`content.${index}`]: 1,
+          [`photo.${index}`]: 1,
+        },
+      },
+      { new: true }
+    );
+
+    await LinuxFile.findByIdAndUpdate(fileId, {
+      $pull: {
+        concept: null,
+        content: null,
+        photo: null,
+      },
+    });
+
+    res.status(200).json(updatedFile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Failed to delete content");
+  }
+};
+
+module.exports.updatecontent = async (req, res) => {
+  try {
+    const fileId = req.params.fileId;
+    const index = req.params.index;
+    const updatedContent = req.body.content;
+    const updatedConcept = req.body.concept;
+    const updatedPhoto = req.file; // 수정한 사진 가져오기
+
+    const fileToUpdate = await LinuxFile.findById(fileId);
+
+    if (!fileToUpdate) {
+      return res.status(404).json({ error: "File not found." });
+    }
+
+    if (index < 0 || index >= fileToUpdate.content.length) {
+      return res.status(400).json({ error: "Invalid index." });
+    }
+
+    fileToUpdate.content[index] = updatedContent;
+    fileToUpdate.concept[index] = updatedConcept;
+
+    if (updatedPhoto) {
+      // 새로운 사진 업로드한 경우에만 처리
+      const photoURL = `${updatedPhoto.filename}`;
+      fileToUpdate.photo[index] = photoURL;
+    }
+
+    await fileToUpdate.save();
+
+    res.json(fileToUpdate);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error updating content." });
   }
 };
 
@@ -443,5 +511,88 @@ module.exports.getphoto = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+//파일 가져오기
+module.exports.gettestbedFile = async (req, res) => {
+  try {
+    const files = await File.find({}, "filename filetext uploadDate").sort({
+      uploadDate: -1,
+    });
+    res.json(files);
+  } catch (error) {
+    console.error("Error fetching files:", error);
+    res
+      .status(500)
+      .json({ error: "파일 목록을 불러오는 중 오류가 발생했습니다." });
+  }
+};
+
+//파일 업로드
+module.exports.uploadtestbedFile = async (req, res) => {
+  try {
+    const { filename, originalname, mimetype, size } = req.file;
+    const { filetext } = req.body;
+
+    const newFile = new File({
+      filename,
+      originalname,
+      filetext,
+      mimetype,
+      size,
+    });
+
+    await newFile.save();
+    res.json({ message: "압축 파일 업로드 완료" });
+  } catch (error) {
+    console.error("Error uploading zip file:", error);
+    res.status(500).json({ error: "압축 파일 업로드 중 오류가 발생했습니다." });
+  }
+};
+
+module.exports.deletetestbedFile = async (req, res) => {
+  const filename = req.params.filename;
+
+  try {
+    const file = await File.findOne({ filename });
+
+    if (!file) {
+      return res.status(404).json({ error: "파일을 찾을 수 없습니다." });
+    }
+
+    await File.deleteOne({ filename });
+
+    // 파일 시스템에서도 파일 삭제
+    await fs.unlink(`./public/zip/${filename}`, (error) => {
+      if (error) {
+        console.error("Error deleting file:", error);
+      } else {
+        console.log("File deleted successfully.");
+      }
+    }); //콜백함수 알아보기
+
+    res.json({ message: "파일이 삭제되었습니다." });
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    res.status(500).json({ error: "파일 삭제 중 오류가 발생했습니다." });
+  }
+};
+
+module.exports.downloadfile = async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, "../public", "zip", filename); // 파일 경로 설정
+    console.log(filePath);
+
+    res.download(filePath, filename, (err) => {
+      if (err) {
+        console.error("Error downloading file:", err);
+        res.status(500).send("Error downloading file");
+      }
+    });
+  } catch (error) {
+    console.error("Error handling file download:", error);
+    res.status(500).send("Error handling file download");
   }
 };

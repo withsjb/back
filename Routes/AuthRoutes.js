@@ -25,12 +25,19 @@ const {
   applinux,
   getlinux,
   addContent,
+  deleteContent,
   getFile,
   addPhoto,
   getphoto,
+  updatecontent,
+  gettestbedFile,
+  uploadtestbedFile,
+  deletetestbedFile,
+  downloadfile,
 } = require("../Controllers/AuthControllers");
 const { checkUser } = require("../Middlewares/AuthMiddlewares");
-const uploadMiddleware = require("../Middlewares/MulterMiddleware");
+const uploadMiddleware = require("../middlewares/MulterMiddleware");
+const fileMiddleware = require("../Middlewares/FileMiddleware");
 
 //자동생성 되는거보니 기능인듯
 
@@ -76,12 +83,27 @@ router.route("/linux/files").get(getlinux).post(applinux);
 router.route("/linux/files/:fileId").get(getFile);
 
 router
-  .route("/linux/files/:fileId/addcontent")
+  .route("/linux/files/:fileId/content")
   .post(uploadMiddleware.single("photo"), addContent);
+
+router
+  .route("/linux/files/:fileId/content/:index")
+  .delete(deleteContent)
+  .put(uploadMiddleware.single("photo"), updatecontent);
 
 router
   .route("/linux/files/:fileId/addphoto")
   .get(getphoto)
   .post(uploadMiddleware.single("photo"), addPhoto);
+
+router
+  .route("/testbedfile")
+  .get(gettestbedFile)
+  .post(fileMiddleware.single("zipfile"), uploadtestbedFile);
+
+router
+  .route("/testbedfile/:filename")
+  .get(downloadfile)
+  .delete(deletetestbedFile);
 
 module.exports = router;
