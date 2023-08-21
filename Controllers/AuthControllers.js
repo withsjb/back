@@ -596,3 +596,21 @@ module.exports.downloadfile = async (req, res) => {
     res.status(500).send("Error handling file download");
   }
 };
+
+module.exports.downloadfile = async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, "../public", "zip", filename); // 파일 경로 설정
+    console.log(filePath);
+
+    res.download(filePath, filename, (err) => {
+      if (err) {
+        console.error("Error downloading file:", err);
+        res.status(500).send("Error downloading file");
+      }
+    });
+  } catch (error) {
+    console.error("Error handling file download:", error);
+    res.status(500).send("Error handling file download");
+  }
+};
