@@ -933,6 +933,10 @@ module.exports.getpostdetail = async (req, res) => {
     if (!post) {
       return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
     }
+
+    post.views++;
+    await post.save();
+
     res.json(post);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -963,5 +967,19 @@ module.exports.postcomments = async (req, res) => {
     res.status(201).json(updatedPost.comments);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports.likes = async (req, res) => {
+  try {
+    const post = await Board.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    post.likes++;
+    await post.save();
+    res.status(200).json({ message: "좋아요가 추가되었습니다." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

@@ -53,6 +53,7 @@ const {
   winaddContent,
   wingetphoto,
   winaddPhoto,
+  likes,
 } = require("../Controllers/AuthControllers");
 const { checkUser } = require("../Middlewares/AuthMiddlewares");
 const uploadMiddleware = require("../Middlewares/MulterMiddleware");
@@ -160,5 +161,7 @@ router.route("/board").get(getboard).post(postboard);
 router.route("/board/:id").get(getpostdetail).delete(deleteboard).put(putboard);
 
 router.route("/board/:id/comments").get(getcomments).post(postcomments);
+
+router.route("/board/:id/like").post(likes);
 
 module.exports = router;
