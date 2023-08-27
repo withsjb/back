@@ -8,6 +8,7 @@ const fs = require("fs");
 const Term = require("../Models/TermModel");
 const Wikiapp = require("../Models/wikiappModel");
 const LinuxFile = require("../Models/linuxfileModel");
+const WinFile = require("../Models/winfileModel");
 const { questions: questions, answers, photo } = require("../database/data.js");
 const _ = require("lodash");
 const UploadModel = require("../Models/UploadModel");
@@ -624,6 +625,176 @@ module.exports.getphoto = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+//window파일추가
+module.exports.getwindow = async (req, res) => {
+  try {
+    const files = await WinFile.find({}, { content: 0 }); // 컨텐츠 필드는 제외하고 조회
+    res.status(200).json(files);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("파일 목록 가져오기 실패");
+  }
+};
+
+module.exports.postwindow = async (req, res) => {
+  try {
+    const { name, content } = req.body;
+    const newLinuxFile = await WinFile.create({ name, content });
+
+    res.status(201).json({
+      _id: newLinuxFile._id, // 파일의 id를 반환
+      name: newLinuxFile.name,
+      content: newLinuxFile.content,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to add file" });
+  }
+};
+
+module.exports.getwinFile = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+
+    const file = await WinFile.findById(fileId);
+
+    if (!file) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    res.status(200).json(file);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Failed to get file");
+  }
+};
+
+module.exports.winaddContent = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const { concept, content } = req.body;
+    const photo = req.file; // 업로드된 사진 파일
+
+    const updateObject = {
+      $push: {
+        concept: concept !== null ? concept : [], // 빈 문자열인 경우에도 배열로 설정
+        content: content !== null ? content : "",
+        photo: photo ? photo.filename : "",
+      },
+    };
+
+    const updatedFile = await WinFile.findByIdAndUpdate(fileId, updateObject, {
+      new: true,
+    });
+
+    res.status(200).json(updatedFile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Failed to add content and photo to file");
+  }
+};
+
+module.exports.windeleteContent = async (req, res) => {
+  try {
+    const { fileId, index } = req.params;
+    console.log("Received index:", index);
+    const updatedFile = await WinFile.findByIdAndUpdate(
+      fileId,
+      {
+        $unset: {
+          [`concept.${index}`]: 1,
+          [`content.${index}`]: 1,
+          [`photo.${index}`]: 1,
+        },
+      },
+      { new: true }
+    );
+
+    await WinFile.findByIdAndUpdate(fileId, {
+      $pull: {
+        concept: null,
+        content: null,
+        photo: null,
+      },
+    });
+
+    res.status(200).json(updatedFile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Failed to delete content");
+  }
+};
+
+module.exports.winupdatecontent = async (req, res) => {
+  try {
+    const fileId = req.params.fileId;
+    const index = req.params.index;
+    const updatedContent = req.body.content;
+    const updatedConcept = req.body.concept;
+    const updatedPhoto = req.file; // 수정한 사진 가져오기
+
+    const fileToUpdate = await WinFile.findById(fileId);
+
+    if (!fileToUpdate) {
+      return res.status(404).json({ error: "File not found." });
+    }
+
+    if (index < 0 || index >= fileToUpdate.content.length) {
+      return res.status(400).json({ error: "Invalid index." });
+    }
+
+    fileToUpdate.content[index] = updatedContent;
+    fileToUpdate.concept[index] = updatedConcept;
+
+    if (updatedPhoto) {
+      // 새로운 사진 업로드한 경우에만 처리
+      const photoURL = `${updatedPhoto.filename}`;
+      fileToUpdate.photo[index] = photoURL;
+    }
+
+    await fileToUpdate.save();
+
+    res.json(fileToUpdate);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error updating content." });
+  }
+};
+
+module.exports.wingetphoto = async (req, res) => {
+  try {
+    const file = await WinFile.findById(req.params.fileId);
+    if (!file) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    res.json({ photos: file.photo });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports.winaddPhoto = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const photo = req.file; // 업로드된 사진 파일
+
+    const updatedFile = await WinFile.findByIdAndUpdate(
+      fileId,
+      {
+        $push: { photo: photo.filename },
+      },
+      { new: true }
+    );
+
+    res.status(200).json(updatedFile);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Failed to add photo to file");
   }
 };
 

@@ -45,6 +45,14 @@ const {
   WingetQuestion,
   WinupdatQuestion,
   WindropQuestions,
+  getwindow,
+  postwindow,
+  getwinFile,
+  windeleteContent,
+  winupdatecontent,
+  winaddContent,
+  wingetphoto,
+  winaddPhoto,
 } = require("../Controllers/AuthControllers");
 const { checkUser } = require("../Middlewares/AuthMiddlewares");
 const uploadMiddleware = require("../Middlewares/MulterMiddleware");
@@ -98,7 +106,7 @@ router.route("/terms").get(getterm).post(postterm);
 router.route("/wikiapp").get(getwikiapp).post(postwikiapp);
 
 router.route("/term/:word").get(getwikiterm);
-
+//리눅스 파일
 router.route("/linux/files").get(getlinux).post(applinux);
 
 router.route("/linux/files/:fileId").get(getFile);
@@ -117,6 +125,26 @@ router
   .get(getphoto)
   .post(uploadMiddleware.single("photo"), addPhoto);
 
+//window파일
+router.route("/win/files").get(getwindow).post(postwindow);
+
+router.route("/win/files/:fileId").get(getwinFile);
+
+router
+  .route("/win/files/:fileId/content")
+  .post(uploadMiddleware.single("photo"), winaddContent);
+
+router
+  .route("/win/files/:fileId/content/:index")
+  .delete(windeleteContent)
+  .put(uploadMiddleware.single("photo"), winupdatecontent);
+
+router
+  .route("/win/files/:fileId/addphoto")
+  .get(wingetphoto)
+  .post(uploadMiddleware.single("photo"), winaddPhoto);
+
+//testbed
 router
   .route("/testbedfile")
   .get(gettestbedFile)
