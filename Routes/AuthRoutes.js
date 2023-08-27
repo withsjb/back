@@ -34,9 +34,20 @@ const {
   uploadtestbedFile,
   deletetestbedFile,
   downloadfile,
+  getboard,
+  postboard,
+  deleteboard,
+  putboard,
+  getpostdetail,
+  getcomments,
+  postcomments,
+  WinpostQuestions,
+  WingetQuestion,
+  WinupdatQuestion,
+  WindropQuestions,
 } = require("../Controllers/AuthControllers");
 const { checkUser } = require("../Middlewares/AuthMiddlewares");
-const uploadMiddleware = require("../Middlewares/MulterMiddleware");
+const uploadMiddleware = require("../middlewares/MulterMiddleware");
 const fileMiddleware = require("../Middlewares/FileMiddleware");
 
 //자동생성 되는거보니 기능인듯
@@ -51,6 +62,16 @@ router
   .route("/quiz")
   .get(getLatestQuestion)
   .post(uploadMiddleware.single("photo"), testQuestions);
+
+router
+  .route("/winquiz")
+  .get(WingetQuestion)
+  .post(uploadMiddleware.single("photo"), WinpostQuestions);
+
+router
+  .route("/winquiz/:quizId/:questionId")
+  .delete(WindropQuestions)
+  .put(uploadMiddleware.single("photo"), WinupdatQuestion);
 
 router
   .route("/questions/:quizId/:questionId")
@@ -105,5 +126,11 @@ router
   .route("/testbedfile/:filename")
   .get(downloadfile)
   .delete(deletetestbedFile);
+
+router.route("/board").get(getboard).post(postboard);
+
+router.route("/board/:id").get(getpostdetail).delete(deleteboard).put(putboard);
+
+router.route("/board/:id/comments").get(getcomments).post(postcomments);
 
 module.exports = router;

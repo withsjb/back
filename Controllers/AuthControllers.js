@@ -1,6 +1,7 @@
 const UserModel = require("../Models/UserModel");
 const jwt = require("jsonwebtoken");
 const Questions = require("../Models/questionModel");
+const WinQuestion = require("../Models/WinproblemModel");
 const Results = require("../Models/resultModel");
 const path = require("path");
 const fs = require("fs");
@@ -11,6 +12,8 @@ const { questions: questions, answers, photo } = require("../database/data.js");
 const _ = require("lodash");
 const UploadModel = require("../Models/UploadModel");
 const File = require("../Models/fileuploadModel");
+const Board = require("../Models/boardModel");
+
 const maxAge = 3 * 24 * 60 * 60;
 
 const createToken = (id) => {
@@ -95,7 +98,7 @@ module.exports.insertQuestions = async (req, res) => {
 //마지막 추가된 데이터 확인
 module.exports.getLatestQuestion = async (req, res) => {
   try {
-    const questions = await Question.find().sort({ createdAt: -1 });
+    const questions = await Questions.find().sort({ createdAt: -1 });
     if (!questions) {
       return res.status(404).json({ error: "No questions found" });
     }
@@ -169,6 +172,116 @@ module.exports.updatQuestion = async (req, res) => {
 
     // Find the quiz
     const quiz = await Questions.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    // Find the question to update
+    const questionIndex = quiz.questions.findIndex((q) => q.id === questionId);
+    if (questionIndex === -1) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Update the question and answer
+    const updatedQuestion = {
+      id: questionId,
+      question,
+      text,
+      options,
+    };
+
+    quiz.questions[questionIndex] = updatedQuestion;
+
+    if (Number(answer) === 0) {
+      quiz.answers[questionIndex] = 0; // 정답이 1번일 때는 1로 설정
+    } else {
+      quiz.answers[questionIndex] = parseInt(answer, 10); // 나머지 경우는 answer를 그대로 저장
+    }
+
+    // Save the updated quiz
+    const updatedQuiz = await quiz.save();
+
+    res.status(200).json({
+      message: "Question updated successfully",
+      question: updatedQuiz.questions[questionIndex],
+      answers: updatedQuiz.answers,
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+//window문제
+module.exports.WingetQuestion = async (req, res) => {
+  try {
+    const q = await WinQuestion.find();
+    res.json(q);
+  } catch (error) {
+    res.json(error);
+  }
+};
+
+module.exports.WinpostQuestions = async (req, res) => {
+  try {
+    const { questions, answers } = JSON.parse(req.body.questions);
+
+    const existingQuestion = await WinQuestion.findById(
+      "64eac6339f498c9e6e317237"
+    );
+
+    questions.forEach((questionData) => {
+      existingQuestion.questions.push(questionData);
+    });
+    answers.forEach((answerData) => {
+      existingQuestion.answers.push(answerData);
+    });
+
+    if (req.file && req.file.filename) {
+      const { filename } = req.file;
+      existingQuestion.photo.push(filename);
+    } else {
+      existingQuestion.photo.push(null); // 수정: null 값으로 추가
+    }
+
+    const updatedQuestion = await existingQuestion.save();
+
+    res.json({
+      msg: "Question Updated Successfully",
+      question: updatedQuestion,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports.WindropQuestions = async (req, res) => {
+  try {
+    const { quizId, questionId } = req.params;
+    // find the question to delete from the quiz
+    const quiz = await WinQuestion.findById(quizId);
+    const questionIndex = quiz.questions.findIndex((q) => q.id === questionId);
+    if (questionIndex === -1) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+    // remove the question and answer from the quiz
+    quiz.questions.splice(questionIndex, 1);
+    quiz.answers.splice(questionIndex, 1);
+    await quiz.save();
+    res.status(200).json({ message: "Question deleted successfully" });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports.WinupdatQuestion = async (req, res) => {
+  try {
+    const { quizId, questionId } = req.params;
+    const { question, text, options, answer } = req.body;
+
+    // Find the quiz
+    const quiz = await WinQuestion.findById(quizId);
     if (!quiz) {
       return res.status(404).json({ message: "Quiz not found" });
     }
@@ -594,5 +707,90 @@ module.exports.downloadfile = async (req, res) => {
   } catch (error) {
     console.error("Error handling file download:", error);
     res.status(500).send("Error handling file download");
+  }
+};
+
+//게시판
+module.exports.getboard = async (req, res) => {
+  try {
+    const posts = await Board.find();
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.postboard = async (req, res) => {
+  try {
+    const post = new Board(req.body);
+    const newPost = await post.save();
+    res.status(201).json(newPost);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports.deleteboard = async (req, res) => {
+  try {
+    const deletedPost = await Board.findByIdAndRemove(req.params.id);
+    if (!deletedPost) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    res.json({ message: "게시글이 삭제되었습니다." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.putboard = async (req, res) => {
+  try {
+    const updatedPost = await Board.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    if (!updatedPost) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    res.json(updatedPost);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports.getpostdetail = async (req, res) => {
+  try {
+    const post = await Board.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//게시판 댓글
+
+module.exports.getcomments = async (req, res) => {
+  try {
+    const post = await Board.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    res.json(post.comments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.postcomments = async (req, res) => {
+  try {
+    const post = await Board.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    post.comments.push({ text: req.body.text });
+    const updatedPost = await post.save();
+    res.status(201).json(updatedPost.comments);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
