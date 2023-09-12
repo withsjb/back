@@ -492,6 +492,17 @@ module.exports.getlinux = async (req, res) => {
   }
 };
 
+module.exports.deletelinux = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const deletedFile = await LinuxFile.findByIdAndDelete(fileId);
+    res.json({ message: "파일 삭제 완료" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("파일 목록 가져오기 실패");
+  }
+};
+
 module.exports.getFile = async (req, res) => {
   try {
     const { fileId } = req.params;
@@ -642,6 +653,17 @@ module.exports.getwindow = async (req, res) => {
   try {
     const files = await WinFile.find({}, { content: 0 }); // 컨텐츠 필드는 제외하고 조회
     res.status(200).json(files);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("파일 목록 가져오기 실패");
+  }
+};
+//win 파일 삭제
+module.exports.deleteWinfile = async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const deletedFile = await WinFile.findByIdAndDelete(fileId);
+    res.json({ message: "파일 삭제 완료" });
   } catch (error) {
     console.error(error);
     res.status(500).send("파일 목록 가져오기 실패");

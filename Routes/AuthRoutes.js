@@ -55,6 +55,8 @@ const {
   winaddPhoto,
   likes,
   getuser,
+  deletelinux,
+  deleteWinfile,
 } = require("../Controllers/AuthControllers");
 const { checkUser } = require("../Middlewares/AuthMiddlewares");
 const uploadMiddleware = require("../Middlewares/MulterMiddleware");
@@ -112,7 +114,7 @@ router.route("/term/:word").get(getwikiterm);
 //리눅스 파일
 router.route("/linux/files").get(getlinux).post(applinux);
 
-router.route("/linux/files/:fileId").get(getFile);
+router.route("/linux/files/:fileId").get(getFile).delete(deletelinux);
 
 router
   .route("/linux/files/:fileId/content")
@@ -131,7 +133,7 @@ router
 //window파일
 router.route("/win/files").get(getwindow).post(postwindow);
 
-router.route("/win/files/:fileId").get(getwinFile);
+router.route("/win/files/:fileId").get(getwinFile).delete(deleteWinfile);
 
 router
   .route("/win/files/:fileId/content")
