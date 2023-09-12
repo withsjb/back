@@ -54,6 +54,14 @@ const {
   wingetphoto,
   winaddPhoto,
   likes,
+  qnagetboard,
+  qnapostboard,
+  qnagetpostdetail,
+  qnadeleteboard,
+  qnaputboard,
+  qnagetcomments,
+  qnapostcomments,
+  qnalikes,
   getuser,
   deletelinux,
   deleteWinfile,
@@ -154,6 +162,8 @@ router.route("/testbedfile").get(gettestbedFile).post(uploadtestbedFile);
 
 router.route("/testbedfile/:id").put(downloadfile).delete(deletetestbedFile);
 
+//게시판
+
 router.route("/board").get(getboard).post(postboard);
 
 router.route("/board/:id").get(getpostdetail).delete(deleteboard).put(putboard);
@@ -161,5 +171,21 @@ router.route("/board/:id").get(getpostdetail).delete(deleteboard).put(putboard);
 router.route("/board/:id/comments").get(getcomments).post(postcomments);
 
 router.route("/board/:id/like").post(likes);
+
+//qna게시판
+router.route("/qnaboard").get(qnagetboard).post(qnapostboard);
+
+router
+  .route("/qnaboard/:id")
+  .get(qnagetpostdetail)
+  .delete(qnadeleteboard)
+  .put(qnaputboard);
+
+router
+  .route("/qnaboard/:id/comments")
+  .get(qnagetcomments)
+  .post(qnapostcomments);
+
+router.route("/qnaboard/:id/like").post(qnalikes);
 
 module.exports = router;

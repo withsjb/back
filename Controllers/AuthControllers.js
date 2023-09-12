@@ -998,3 +998,122 @@ module.exports.likes = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+//qna게시판
+module.exports.qnagetboard = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 20;
+
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = page * pageSize;
+
+    const totalPosts = await Board.countDocuments();
+    const totalPages = Math.ceil(totalPosts / pageSize);
+
+    const posts = await Board.find().skip(startIndex).limit(pageSize);
+
+    res.json({
+      page,
+      pageSize,
+      totalPosts,
+      totalPages, // 전체 페이지 수
+      posts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.qnapostboard = async (req, res) => {
+  try {
+    const post = new Board(req.body);
+    const newPost = await post.save();
+    res.status(201).json(newPost);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports.qnadeleteboard = async (req, res) => {
+  try {
+    const deletedPost = await Board.findByIdAndRemove(req.params.id);
+    if (!deletedPost) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    res.json({ message: "게시글이 삭제되었습니다." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.qnaputboard = async (req, res) => {
+  try {
+    const updatedPost = await Board.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    if (!updatedPost) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    res.json(updatedPost);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports.qnagetpostdetail = async (req, res) => {
+  try {
+    const post = await Board.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+
+    post.views++;
+    await post.save();
+
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//게시판 댓글
+
+module.exports.qnagetcomments = async (req, res) => {
+  try {
+    const post = await Board.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    res.json(post.comments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports.qnapostcomments = async (req, res) => {
+  try {
+    const post = await Board.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    post.comments.push({ text: req.body.text });
+    const updatedPost = await post.save();
+    res.status(201).json(updatedPost.comments);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports.qnalikes = async (req, res) => {
+  try {
+    const post = await Board.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
+    }
+    post.likes++;
+    await post.save();
+    res.status(200).json({ message: "좋아요가 추가되었습니다." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
