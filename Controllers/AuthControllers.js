@@ -558,9 +558,13 @@ module.exports.addContent = async (req, res) => {
       },
     };
 
-    const updatedFile = await LinuxFile.findByIdAndUpdate(updateObject, {
-      new: true,
-    });
+    const updatedFile = await LinuxFile.findByIdAndUpdate(
+      fileId,
+      updateObject,
+      {
+        new: true,
+      }
+    );
 
     res.status(200).json(updatedFile);
   } catch (error) {
