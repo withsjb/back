@@ -19,6 +19,21 @@ const AWS = require("aws-sdk");
 
 const maxAge = 3 * 24 * 60 * 60;
 
+const s3 = new AWS.S3({
+  accessKeyId: "AKIAWT2IDLWJE4QW76HK",
+  secretAccessKey: "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",
+  region: "ap-northeast-2",
+});
+
+// 파일 URL 얻는 함수
+function getFileUrl(fileKey) {
+  const params = {
+    Bucket: "jinbin11", // S3 버킷 이름 (여기서는 "jinbin11"로 수정)
+    Key: fileKey, // 업로드된 파일의 키(파일 이름)
+  };
+  return s3.getSignedUrl("getObject", params); // 파일 URL 반환
+}
+
 const createToken = (id) => {
   return jwt.sign({ id }, "kishan sheth super secret key", {
     expiresIn: maxAge,
@@ -527,20 +542,25 @@ module.exports.addContent = async (req, res) => {
     const { fileId } = req.params;
     const { concept, content } = req.body;
     const photo = req.file; // 업로드된 사진 파일
+    let photoUrl = null;
+
+    if (photo) {
+      // 업로드된 파일이 있을 때만 URL을 얻어옴
+      const fileKey = photo.key; // 업로드된 파일의 키(파일 이름)
+      photoUrl = getFileUrl(fileKey); // 파일 URL 얻기
+    }
 
     const updateObject = {
       $push: {
         concept: concept !== null ? concept : [], // 빈 문자열인 경우에도 배열로 설정
         content: content !== null ? content : "",
-        photo: photo ? photo.filename : "",
+        photo: photoUrl || "",
       },
     };
 
-    const updatedFile = await LinuxFile.findByIdAndUpdate(
-      fileId,
-      updateObject,
-      { new: true }
-    );
+    const updatedFile = await LinuxFile.findByIdAndUpdate(updateObject, {
+      new: true,
+    });
 
     res.status(200).json(updatedFile);
   } catch (error) {
@@ -736,21 +756,6 @@ module.exports.winaddContent = async (req, res) => {
     res.status(500).send("Failed to add content and photo to file");
   }
 };
-
-const s3 = new AWS.S3({
-  accessKeyId: "AKIAWT2IDLWJE4QW76HK",
-  secretAccessKey: "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",
-  region: "ap-northeast-2",
-});
-
-// 파일 URL 얻는 함수
-function getFileUrl(fileKey) {
-  const params = {
-    Bucket: "jinbin11", // S3 버킷 이름 (여기서는 "jinbin11"로 수정)
-    Key: fileKey, // 업로드된 파일의 키(파일 이름)
-  };
-  return s3.getSignedUrl("getObject", params); // 파일 URL 반환
-}
 
 module.exports.windeleteContent = async (req, res) => {
   try {
