@@ -14,6 +14,8 @@ const _ = require("lodash");
 const UploadModel = require("../Models/UploadModel");
 const File = require("../Models/fileuploadModel");
 const Board = require("../Models/boardModel");
+const QnAboard = require("../Models/QnAboard");
+const AWS = require("aws-sdk");
 
 const maxAge = 3 * 24 * 60 * 60;
 
@@ -708,12 +710,19 @@ module.exports.winaddContent = async (req, res) => {
     const { fileId } = req.params;
     const { concept, content } = req.body;
     const photo = req.file; // 업로드된 사진 파일
+    let photoUrl = null;
+
+    if (photo) {
+      // 업로드된 파일이 있을 때만 URL을 얻어옴
+      const fileKey = photo.key; // 업로드된 파일의 키(파일 이름)
+      photoUrl = getFileUrl(fileKey); // 파일 URL 얻기
+    }
 
     const updateObject = {
       $push: {
         concept: concept !== null ? concept : [], // 빈 문자열인 경우에도 배열로 설정
         content: content !== null ? content : "",
-        photo: photo ? photo.filename : "",
+        photo: photoUrl || "",
       },
     };
 
@@ -727,6 +736,21 @@ module.exports.winaddContent = async (req, res) => {
     res.status(500).send("Failed to add content and photo to file");
   }
 };
+
+const s3 = new AWS.S3({
+  accessKeyId: "AKIAWT2IDLWJE4QW76HK",
+  secretAccessKey: "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",
+  region: "ap-northeast-2",
+});
+
+// 파일 URL 얻는 함수
+function getFileUrl(fileKey) {
+  const params = {
+    Bucket: "jinbin11", // S3 버킷 이름 (여기서는 "jinbin11"로 수정)
+    Key: fileKey, // 업로드된 파일의 키(파일 이름)
+  };
+  return s3.getSignedUrl("getObject", params); // 파일 URL 반환
+}
 
 module.exports.windeleteContent = async (req, res) => {
   try {
@@ -1008,10 +1032,10 @@ module.exports.qnagetboard = async (req, res) => {
     const startIndex = (page - 1) * pageSize;
     const endIndex = page * pageSize;
 
-    const totalPosts = await Board.countDocuments();
+    const totalPosts = await QnAboard.countDocuments();
     const totalPages = Math.ceil(totalPosts / pageSize);
 
-    const posts = await Board.find().skip(startIndex).limit(pageSize);
+    const posts = await QnAboard.find().skip(startIndex).limit(pageSize);
 
     res.json({
       page,
@@ -1027,7 +1051,7 @@ module.exports.qnagetboard = async (req, res) => {
 
 module.exports.qnapostboard = async (req, res) => {
   try {
-    const post = new Board(req.body);
+    const post = new QnAboard(req.body);
     const newPost = await post.save();
     res.status(201).json(newPost);
   } catch (error) {
@@ -1037,7 +1061,7 @@ module.exports.qnapostboard = async (req, res) => {
 
 module.exports.qnadeleteboard = async (req, res) => {
   try {
-    const deletedPost = await Board.findByIdAndRemove(req.params.id);
+    const deletedPost = await QnAboard.findByIdAndRemove(req.params.id);
     if (!deletedPost) {
       return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
     }
@@ -1049,9 +1073,13 @@ module.exports.qnadeleteboard = async (req, res) => {
 
 module.exports.qnaputboard = async (req, res) => {
   try {
-    const updatedPost = await Board.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
+    const updatedPost = await QnAboard.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+      }
+    );
     if (!updatedPost) {
       return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
     }
@@ -1063,7 +1091,7 @@ module.exports.qnaputboard = async (req, res) => {
 
 module.exports.qnagetpostdetail = async (req, res) => {
   try {
-    const post = await Board.findById(req.params.id);
+    const post = await QnAboard.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
     }
@@ -1080,7 +1108,7 @@ module.exports.qnagetpostdetail = async (req, res) => {
 
 module.exports.qnagetcomments = async (req, res) => {
   try {
-    const post = await Board.findById(req.params.id);
+    const post = await QnAboard.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
     }
@@ -1092,7 +1120,7 @@ module.exports.qnagetcomments = async (req, res) => {
 
 module.exports.qnapostcomments = async (req, res) => {
   try {
-    const post = await Board.findById(req.params.id);
+    const post = await QnAboard.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
     }
@@ -1106,7 +1134,7 @@ module.exports.qnapostcomments = async (req, res) => {
 
 module.exports.qnalikes = async (req, res) => {
   try {
-    const post = await Board.findById(req.params.id);
+    const post = await QnAboard.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
     }
