@@ -16,7 +16,7 @@ const File = require("../Models/fileuploadModel");
 const Board = require("../Models/boardModel");
 const QnAboard = require("../Models/QnAboard");
 const AWS = require("aws-sdk");
-
+const { v4: uuidv4 } = require("uuid");
 const maxAge = 3 * 24 * 60 * 60;
 
 const s3 = new AWS.S3({
@@ -27,11 +27,7 @@ const s3 = new AWS.S3({
 
 // 파일 URL 얻는 함수
 function getFileUrl(fileKey) {
-  const params = {
-    Bucket: "jinbin11", // S3 버킷 이름 (여기서는 "jinbin11"로 수정)
-    Key: fileKey, // 업로드된 파일의 키(파일 이름)
-  };
-  return s3.getSignedUrl("getObject", params); // 파일 URL 반환
+  return `https://jinbin11.s3.ap-northeast-2.amazonaws.com/${fileKey}`;
 }
 
 const createToken = (id) => {
@@ -627,7 +623,7 @@ module.exports.updatecontent = async (req, res) => {
 
     if (updatedPhoto) {
       // 새로운 사진 업로드한 경우에만 처리
-      const photoURL = `${updatedPhoto.filename}`;
+      const photoURL = updatedPhoto.location; // S3 업로드 후 URL
       fileToUpdate.photo[index] = photoURL;
     }
 
@@ -815,7 +811,7 @@ module.exports.winupdatecontent = async (req, res) => {
 
     if (updatedPhoto) {
       // 새로운 사진 업로드한 경우에만 처리
-      const photoURL = `${updatedPhoto.filename}`;
+      const photoURL = updatedPhoto.location; // S3 업로드 후 URL
       fileToUpdate.photo[index] = photoURL;
     }
 
